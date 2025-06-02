@@ -75,6 +75,16 @@ app.add_middleware(
     allow_headers=["*"],           
 )
 
+def get_db():
+    db = SessionLocal() # Cria uma nova sessão
+    try:
+        yield db # Fornece a sessão para o endpoint
+    finally:
+        db.close() # Fecha a sessão no final da requisição (mesmo que ocorra erro)
+
+# Use Annotated para injeção de dependência com tipagem
+DBSession = Annotated[Session, Depends(get_db)]
+
 
 # Temporarios
 Professores = []
@@ -83,37 +93,55 @@ Salas = []
 
 # CRUD Professores
 @app.post("/professor/", response_model=professor)
-def create_professores(professor: professor):
-    if any(p.id == professor.idprofessor for p in Professores):
-        raise HTTPException(status_code=400, detail="ID já existe")
-    if any(p.email == professor.email for p in Professores):
-        raise HTTPException(status_code=400, detail="Email já existe")
+def create_professores(professor: professorBase, db: DBSession):
+    db_professor = db.query(DBProfessor).filter(DBProfessor.email == professor.email).first()
+    if db_professor:
+        raise HTTPException(status_code=400, detail="Email de professor já existe")
 
-    Professores.append(professor)
-    return professor
+    db_professor = DBProfessor(**professor.model_dump()) 
+
+    db.add(db_professor) 
+    db.commit()          
+    db.refresh(db_professor)
+
+    return db_professor 
 
 
 @app.get("/professor/", response_model=List[professor])
-def read_professores():
+def read_professores(db: DBSession):
+    Professores = db.query(DBProfessor).all()
     return Professores
 
-
-@app.put("/professor/{id}", response_model=professor)
-def update_professores(id: int, updated_prof: professor):
-    for i, prof in enumerate(Professores):
-        if prof.idprofessor == id:
-            Professores[i] = updated_prof
-            return updated_prof
-    raise HTTPException(status_code=404, detail="Professor não encontrado")
+@app.get("/professor/{id_professor}", response_model=Professor)
+def read_professor(id_professor: int, db: DBSession):
+    db_professor = db.query(DBProfessor).filter(DBProfessor.idprofessor == id_professor).first()
+    if db_professor is None:
+        raise HTTPException(status_code=404, detail="Professor não encontrado")
+    return db_professor
 
 
-@app.delete("/professor/{id}")
-def delete_professores(id: int):
-    for i, prof in enumerate(Professores):
-        if prof.idprofessor == id:
-            del Professores[i]
-            return {"mensagem": "Professor removido com sucesso"}
-    raise HTTPException(status_code=404, detail="Professor não encontrado")
+@app.put("/professor/{id_professor}", response_model=professor)
+def update_professores(id: int, updated_prof: professorBase, db: DBSession):
+    db_professor = db.query(DBProfessor).filter(DBProfessor.idprofessor == id).first()
+    if db_professor is None:
+        raise HTTPException(status_code=404, detail="Professor não encontrado")
+    
+    for i, prof in updated_prof.model_dump().items():
+        setattr(db_professor, i, prof)
+
+    db.commit()
+    db.refresh(db_professor)
+    return db_professor
+
+@app.delete("/professor/{id_professor}")
+def delete_professores(id_professor: int, db:DBSession):
+    db_professor = db.query(DBProfessor).filter(DBProfessor.idprofessor == id_professor).first()
+    if db_professor is None:
+        raise HTTPException(status_code=404, detail="Professor nao encontrado")
+
+    db.delete(db_professor)
+    db.commit()
+    return {"mensagem": "Professor removido com sucesso"}
 
 
 # CRUD Salas
