@@ -7,6 +7,21 @@ from typing import List
 
 app = FastAPI()
 
+origins = [
+    "http://localhost", # Geralmente não é necessário, mas pode incluir
+    "http://localhost:3000", # A porta padrão do React Dev Server (CRA/Vite)
+    # Adicione outras origens se seu frontend rodar em outra porta/domínio
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    #allow_origins=origins,         
+    allow_origins=["*"],
+    allow_credentials=True,      # 
+    allow_methods=["*"],           
+    allow_headers=["*"],           
+)
+
 
 class professor(BaseModel):
     idprofessor: int
