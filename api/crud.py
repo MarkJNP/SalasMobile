@@ -1,9 +1,62 @@
 # Versão 1.2.2
 
 from uvicorn import run
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List
+from typing import List, Annotated 
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy,orm import declarative_base, sessionmaker, Session
+
+DATABASE_URL = "mysql+pymysql://root:senha@localhost:8080/banco"
+
+engine = create_engine(DATABASE_URL, pool_recycle=3600)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+
+#---Declaração de ORM
+class DBProfessor(Base):
+    __tablename__ = "professores"
+
+    idprofessor = Column(Integer, primary_key=True, index=True)
+    nome = Column(String(255), index=True)
+    email = Column(String(255), unique=True, index=True)
+    senha = Column(String(255))
+
+class DBSala(Base):
+    __tablename__ = "salas"
+
+    idsalas = Column(Integer, primary_key=True, index=True)
+    numero = Column(String(50), unique=True,index=True)
+    tiposala = Column(String(100))
+    bloco = Column(String(50))
+    capacidade = Column(Integer)
+
+
+class professorBase(BaseModel):
+    nome: str
+    email: str
+    senha: str
+
+class professor(professorBase):
+    idprofessor: int
+    class Config:
+        orm_mode = True
+
+
+class salaBase(BaseModel):
+    numero: str
+    tiposala: str
+    bloco: str
+    capacidade: int
+
+class salas(salaBase):
+    idsalas: int
+    class Config:
+        orm_mode = True
+
+#---Fim de declaração de ORM
 
 app = FastAPI()
 
@@ -22,20 +75,6 @@ app.add_middleware(
     allow_headers=["*"],           
 )
 
-
-class professor(BaseModel):
-    idprofessor: int
-    nome: str
-    email: str
-    senha: str
-
-
-class salas(BaseModel):
-    idsalas: int
-    numero: str
-    tiposala: str
-    bloco: str
-    capacidade: int
 
 # Temporarios
 Professores = []
