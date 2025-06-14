@@ -42,7 +42,7 @@ class professorBase(BaseModel):
 class professor(professorBase):
     idprofessor: int
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class salaBase(BaseModel):
@@ -54,7 +54,7 @@ class salaBase(BaseModel):
 class salas(salaBase):
     idsalas: int
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 #---Fim de declaração de ORM
 
@@ -145,8 +145,8 @@ def delete_professores(id_professor: int, db:DBSession):
 
 # --- CRUD Salas (AGORA USANDO BANCO DE DADOS) ---
 
-@app.post("/sala/", response_model=Salas) # response_model é Sala (singular)
-def create_salas(sala: salaBase, db: DBSession): # Use SalaBase para input, nomeie a variável 'sala' singular
+@app.post("/sala/", response_model=Salas)
+def create_salas(sala: salaBase, db: DBSession): 
     # Verifique se o número da sala já existe
     db_sala = db.query(DBSala).filter(DBSala.numero == sala.numero).first()
     if db_sala:
