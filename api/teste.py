@@ -1,4 +1,4 @@
-# Versão 1.3.1
+# Versão 1.5.1
 
 from uvicorn import run
 from fastapi import FastAPI, HTTPException
@@ -10,46 +10,54 @@ from openpyxl import Workbook
 app = FastAPI()
 
 
-class professor(BaseModel):
-    idprofessor: int
-    nome: str
-    email: str
-    senha: str
+class professores(BaseModel):
+    idProfessor: int
+    Nome: str
+    Email: str
+    cpf: str
+    disciplina: str
 
 
 class salas(BaseModel):
-    idsalas: int
-    numero: str
-    tiposala: str
+    idSala: int
+    Numero: str
+    TipoSala: str
     bloco: str
-    capacidade: int
+    Capacidade: int
+
+class reservas(BaseModel):
+    idReserva: int
+    idProfessor: int
+    idSala: int
 
 # Temporarios
 Professores = []
 Salas = []
+Reservas = []
 # -----------
 
 # CRUD Professores
-@app.post("/professor/", response_model=professor)
-def create_professores(professor: professor):
-    if any(p.id == professor.idprofessor for p in Professores):
+@app.post("/professor/", response_model=professores)
+def create_professores(professor: professores):
+    if any(p.idProfessor == professor.idProfessor for p in Professores):
         raise HTTPException(status_code=400, detail="ID já existe")
-    if any(p.email == professor.email for p in Professores):
+    
+    if any(p.Email == professor.Email for p in Professores):
         raise HTTPException(status_code=400, detail="Email já existe")
 
     Professores.append(professor)
     return professor
 
 
-@app.get("/professor/", response_model=List[professor])
+@app.get("/professor/", response_model=List[professores])
 def read_professores():
     return Professores
 
 
-@app.put("/professor/{id}", response_model=professor)
-def update_professores(id: int, updated_prof: professor):
+@app.put("/professor/{id}", response_model=professores)
+def update_professores(id: int, updated_prof: professores):
     for i, prof in enumerate(Professores):
-        if prof.idprofessor == id:
+        if prof.idProfessor == id:
             Professores[i] = updated_prof
             return updated_prof
     raise HTTPException(status_code=404, detail="Professor não encontrado")
@@ -58,7 +66,7 @@ def update_professores(id: int, updated_prof: professor):
 @app.delete("/professor/{id}")
 def delete_professores(id: int):
     for i, prof in enumerate(Professores):
-        if prof.idprofessor == id:
+        if prof.idProfessor == id:
             del Professores[i]
             return {"mensagem": "Professor removido com sucesso"}
     raise HTTPException(status_code=404, detail="Professor não encontrado")
@@ -67,7 +75,7 @@ def delete_professores(id: int):
 # CRUD Salas
 @app.post("/sala/", response_model=Salas)
 def create_salas(salas: salas):
-    if any(p.idsalas == salas.idsalas for p in Salas):
+    if any(p.idSala == salas.idSala for p in Salas):
         raise HTTPException(status_code=400, detail="ID já existe")
     Salas.append(salas)
     return Salas
@@ -81,7 +89,7 @@ def read_salas():
 @app.put("/sala/{id}", response_model=salas)
 def update_salas(id: int, updated_salas: salas):
     for i, sal in enumerate(Salas):
-        if sal.idsalas == id:
+        if sal.idSala == id:
             Salas[i] = updated_salas
             return updated_salas
     raise HTTPException(status_code=404, detail="Sala não encontrado")
@@ -90,10 +98,25 @@ def update_salas(id: int, updated_salas: salas):
 @app.delete("/sala/{id}")
 def delete_salas(id: int):
     for i, sal in enumerate(Salas):
-        if sal.idsalas == id:
+        if sal.idSala == id:
             del Salas[i]
             return {"mensagem": "Sala removido com sucesso"}
     raise HTTPException(status_code=404, detail="Sala não encontrado")
+
+
+@app.post("/reserva/", response_model=reservas)
+def create_reservas(reserva: reservas):
+    if any(p.idReserva == reserva.idReserva for p in Reservas):
+        raise HTTPException(status_code=400, detail="ID da reserva já existe")
+        
+    if any(p.idProfessor == reserva.idProfessor for p in Reservas):
+        raise HTTPException(status_code=400, detail="ID do professor já existe")
+    
+    if any(p.idSala == reserva.idSala for p in Reservas):
+        raise HTTPException(status_code=400, detail="ID da sala já existe")
+
+    Reservas.append(reserva)
+    return reserva
 
 
 # MENSSAGEM DE TESTE
@@ -110,10 +133,16 @@ def excel():
     planilha = arqExc.active
     planilha.title = "salasAgendadas"
 
-    planilha.append(["Professor", "Sala"])
+    planilha.append(["Disciplina", "Professor", "Sala", "Bloco"])
 
-    for prof, sala in zip(Professores, Salas):
-        planilha.append([prof.nome, sala.numero])
+    for reserva in Reservas:
+        professor = next((p for p in Professores if p.idProfessor == reserva.idProfessor), None)
+        sala = next((s for s in Salas if s.idSala == reserva.idSala), None)
+        
+        if professor and sala:
+            planilha.append([professor.disciplina, professor.Nome, sala.Numero, sala.bloco])
+        else:
+            planilha.append(["Dados não encontrados", "", "", ""])
 
     caminho_arquivo = "salasAgendadas.xlsx"
     arqExc.save(caminho_arquivo)
