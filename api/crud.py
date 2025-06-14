@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Annotated 
 from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy,orm import declarative_base, sessionmaker, Session
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 DATABASE_URL = "mysql+pymysql://root:senha@localhost:8080/banco"
 
@@ -70,7 +70,7 @@ app.add_middleware(
     CORSMiddleware,
     #allow_origins=origins,         
     allow_origins=["*"],
-    allow_credentials=True,      # 
+    allow_credentials=True,  
     allow_methods=["*"],           
     allow_headers=["*"],           
 )
