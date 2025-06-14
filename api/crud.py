@@ -1,4 +1,4 @@
-# Versão 1.2.2
+# Versão 1.2.5
 
 from uvicorn import run
 from fastapi import FastAPI, HTTPException, Depends
@@ -8,7 +8,7 @@ from typing import List, Annotated
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
-DATABASE_URL = "mysql+pymysql://root:senha@localhost:8080/banco"
+DATABASE_URL = "mysql+pymysql://admmobile:Mobi@\9r_+?-u?5&5^Y4=@localhost:8080/ClassControl"
 
 engine = create_engine(DATABASE_URL, pool_recycle=3600)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -42,7 +42,7 @@ class professorBase(BaseModel):
 class professor(professorBase):
     idprofessor: int
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class salaBase(BaseModel):
@@ -54,7 +54,7 @@ class salaBase(BaseModel):
 class salas(salaBase):
     idsalas: int
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 #---Fim de declaração de ORM
 
@@ -112,7 +112,7 @@ def read_professores(db: DBSession):
     Professores = db.query(DBProfessor).all()
     return Professores
 
-@app.get("/professor/{id_professor}", response_model=Professor)
+@app.get("/professor/{id_professor}", response_model=professor)
 def read_professor(id_professor: int, db: DBSession):
     db_professor = db.query(DBProfessor).filter(DBProfessor.idprofessor == id_professor).first()
     if db_professor is None:
@@ -143,37 +143,62 @@ def delete_professores(id_professor: int, db:DBSession):
     db.commit()
     return {"mensagem": "Professor removido com sucesso"}
 
+# --- CRUD Salas (AGORA USANDO BANCO DE DADOS) ---
 
-# CRUD Salas
 @app.post("/sala/", response_model=Salas)
-def create_salas(salas: salas):
-    if any(p.idsalas == salas.idsalas for p in Salas):
-        raise HTTPException(status_code=400, detail="ID já existe")
-    Salas.append(salas)
-    return Salas
+def create_salas(sala: salaBase, db: DBSession): 
+    # Verifique se o número da sala já existe
+    db_sala = db.query(DBSala).filter(DBSala.numero == sala.numero).first()
+    if db_sala:
+        raise HTTPException(status_code=400, detail="Número de sala já existe")
+
+    db_sala = DBSala(**sala.model_dump()) # Pydantic v2
+
+    db.add(db_sala)
+    db.commit()
+    db.refresh(db_sala)
+
+    return db_sala # FastAPI serializa para Sala (singular)
+
+@app.get("/sala/", response_model=List[salas]) # response_model é List[Sala] (plural)
+def read_salas(db: DBSession):
+    salas = db.query(DBSala).all()
+    return salas
+
+# Adicionando endpoint para buscar uma sala por ID
+@app.get("/sala/{id_sala}", response_model=salas)
+def read_sala(id_sala: int, db: DBSession):
+    db_sala = db.query(DBSala).filter(DBSala.idsalas == id_sala).first()
+    if db_sala is None:
+        raise HTTPException(status_code=404, detail="Sala não encontrada")
+    return db_sala
 
 
-@app.get("/sala/", response_model=List[salas])
-def read_salas():
-    return Salas
+@app.put("/sala/{id_sala}", response_model=salas)
+def update_salas(id_sala: int, updated_sala: salaBase, db: DBSession): # Use SalaBase para input, nomeie a variável 'updated_sala' singular
+    db_sala = db.query(DBSala).filter(DBSala.idsalas == id_sala).first()
+    if db_sala is None:
+        raise HTTPException(status_code=404, detail="Sala não encontrada")
+
+    for field, value in updated_sala.model_dump().items(): # Pydantic v2
+        setattr(db_sala, field, value)
+
+    db.commit()
+    db.refresh(db_sala)
+
+    return db_sala
 
 
-@app.put("/sala/{id}", response_model=salas)
-def update_salas(id: int, updated_salas: salas):
-    for i, sal in enumerate(Salas):
-        if sal.idsalas == id:
-            Salas[i] = updated_salas
-            return updated_salas
-    raise HTTPException(status_code=404, detail="Sala não encontrado")
+@app.delete("/sala/{id_sala}")
+def delete_salas(id_sala: int, db: DBSession): # Recebe a sessão via Depends, nomeie a variável 'id_sala' singular
+    db_sala = db.query(DBSala).filter(DBSala.idsalas == id_sala).first()
+    if db_sala is None:
+        raise HTTPException(status_code=404, detail="Sala não encontrada")
 
+    db.delete(db_sala)
+    db.commit()
 
-@app.delete("/sala/{id}")
-def delete_salas(id: int):
-    for i, sal in enumerate(Salas):
-        if sal.idsalas == id:
-            del Salas[i]
-            return {"mensagem": "Sala removido com sucesso"}
-    raise HTTPException(status_code=404, detail="Sala não encontrado")
+    return {"mensagem": f"Sala com ID {id_sala} removida com sucesso"}
 
 
 # MENSSAGEM DE TESTE
@@ -183,4 +208,12 @@ def teste():
 # ------------------
 
 if __name__ == "__main__":
-    run(app, port=8000)
+    # Este bloco irá tentar criar as tabelas no banco na primeira execução
+    # Se as tabelas já existirem, ele não fará nada.
+    # Em produção, use ferramentas de migração (como Alembic) para gerenciar schema.
+    print("Criando tabelas no banco de dados...")
+    Base.metadata.create_all(bind=engine)
+    print("Tabelas criadas (ou já existentes).")
+
+    print("Iniciando servidor Uvicorn...")
+    run(app, host="0.0.0.0", port=8000) # Use 0.0.0.0 para ser acessível externamente se necessário
