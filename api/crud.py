@@ -1,4 +1,4 @@
-# Versão 1.2.5
+# Versão 1.6
 
 from uvicorn import run
 from fastapi import FastAPI, HTTPException, Depends
