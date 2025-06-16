@@ -17,11 +17,6 @@ def create_salas(sala: salaBase, db: Session = Depends(get_db)):
     db.refresh(db_sala)
     return db_sala 
 
-"""
-@router.get("/empresas", response_model=list[EmpresaResponse])
-def listar_empresas(db: Session = Depends(get_db)):
-    return db.query(Empresa).all()
-"""
 
 @router.get("/sala/", response_model=list[salas]) # response_model é List[Sala] (plural)
 def read_salas(db: Session = Depends(get_db)):
