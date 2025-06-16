@@ -18,7 +18,7 @@ def create_salas(sala: salaBase, db: Session = Depends(get_db)):
     return db_sala 
 
 
-@router.get("/sala/", response_model=list[salas]) # response_model é List[Sala] (plural)
+@router.get("/sala/", response_model=list[salas])
 def read_salas(db: Session = Depends(get_db)):
     return db.query(DBSala).all()
 
@@ -46,7 +46,7 @@ def update_salas(id_sala: int, updated_sala: salaBase, db: Session = Depends(get
 
 
 @router.delete("/sala/{id_sala}")
-def delete_salas(id_sala: int, db: Session = Depends(get_db)): # Recebe a sessão via Depends, nomeie a variável 'id_sala' singular
+def delete_salas(id_sala: int, db: Session = Depends(get_db)): 
     db_sala = db.query(DBSala).filter(DBSala.idsalas == id_sala).first()
     if db_sala is None:
         raise HTTPException(status_code=404, detail="Sala não encontrada")
