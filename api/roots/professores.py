@@ -14,11 +14,9 @@ def create_professores(professor: ProfessorBase, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email de professor já existe")
 
     db_professor = DBProfessor(**professor.model_dump()) 
-
     db.add(db_professor) 
     db.commit()          
     db.refresh(db_professor)
-
     return db_professor 
 
 

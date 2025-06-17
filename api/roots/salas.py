@@ -20,7 +20,6 @@ def create_salas(sala: SalaBase, db: Session = Depends(get_db)):
     return db_sala
 
 
-
 @router.get("/sala/", response_model=list[Sala])
 def read_salas(db: Session = Depends(get_db)):
     return db.query(DBSala).all()
@@ -31,6 +30,7 @@ def read_sala(id_sala: int, db: Session = Depends(get_db)):
     db_sala = db.query(DBSala).filter(DBSala.idsalas == id_sala).first()
     if db_sala is None:
         raise HTTPException(status_code=404, detail="Sala não encontrada")
+    
     return db_sala
 
 
@@ -53,6 +53,7 @@ def delete_salas(id_sala: int, db: Session = Depends(get_db)):
     db_sala = db.query(DBSala).filter(DBSala.idsalas == id_sala).first()
     if db_sala is None:
         raise HTTPException(status_code=404, detail="Sala não encontrada")
+    
     db.delete(db_sala)
     db.commit()
     return {"mensagem": f"Sala com ID {id_sala} removida com sucesso"}
