@@ -5,12 +5,15 @@ from datetime import time, date
 class ProfessorBase(BaseModel):
     nome: str
     email: str
-    senha: str
+    cpf: str
+    disciplina: str
+
 
 class Professor(ProfessorBase):
     idprofessor: int
+
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class SalaBase(BaseModel):
@@ -19,20 +22,13 @@ class SalaBase(BaseModel):
     bloco: str
     capacidade: int
 
+
 class Sala(SalaBase):
-    idsalas: int
+    idsala: int 
+
     class Config:
-        from_attributes = True
+        orm_mode = True
 
-
-class ReservaBase(BaseModel):
-    idprofessor: int
-    idsala: int
-
-class Reserva(ReservaBase):
-    idreserva: int
-    class Config:
-        from_attributes = True
 
 
 class HorarioBase(BaseModel):
@@ -40,7 +36,24 @@ class HorarioBase(BaseModel):
     hora_fim: time
     data: date
 
+
 class Horario(HorarioBase):
     idreserva: int
+
     class Config:
-        from_attributes = True
+        orm_mode = True
+
+
+class ReservaBase(BaseModel):
+    idprofessor: int
+    idsala: int
+
+
+class Reserva(ReservaBase):
+    idreserva: int
+    professor: Professor
+    sala: Sala
+    horario: Horario | None = None  # Pode não existir ainda
+
+    class Config:
+        orm_mode = True
