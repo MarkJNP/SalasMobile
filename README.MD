@@ -34,7 +34,7 @@ Este projeto foi desenvolvido para facilitar o agendamento de salas de laborató
 ```bash
 git clone https://github.com/seu-usuario/nome-do-projeto.git
 cd nome-do-projeto
-
+```
 
 ### Executar:
 
