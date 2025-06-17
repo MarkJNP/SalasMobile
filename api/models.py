@@ -13,8 +13,7 @@ class DBSala(Base):
     __tablename__ = "salas"
 
     idsalas = Column(Integer, primary_key=True, index=True)
-    numero = Column(String(50), unique=True,index=True)
+    numero = Column(String(50), unique=True, index=True)
     tiposala = Column(String(100))
     bloco = Column(String(50))
     capacidade = Column(Integer)
-    

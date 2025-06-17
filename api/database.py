@@ -2,6 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+# por a senha correta!!!
 DATABASE_URL = "mysql+pymysql://admmobile:Mobi@\9r_+?-u?5&5^Y4=@localhost:8080/ClassControl"
 
 engine = create_engine(DATABASE_URL, pool_recycle=3600)
